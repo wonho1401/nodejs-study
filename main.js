@@ -11,9 +11,15 @@ let app = http.createServer(function (request, response) {
 
   if (pathname === "/") {
     if (title === undefined) {
-      fs.readFile(`data/${title}`, "utf8", function (err, data) {
+      fs.readdir("./data", (err, filelist) => {
         let title = "Welcome";
-        var data = "Hello. Nodejs";
+        let data = "Hello. Nodejs";
+        let list = `<ol>`;
+        for (let file of filelist) {
+          list += `<li><a href="/?id=${file}">${file}</a></li>`;
+        }
+        list += `</ol>`;
+
         let template = `
 <!doctype html>
   <html>
@@ -23,11 +29,7 @@ let app = http.createServer(function (request, response) {
     </head>
   <body>
   <h1><a href="/">WEB</a></h1>
-  <ol>
-    <li><a href="/?id=html">HTML</a></li>
-    <li><a href="/?id=css">CSS</a></li>
-    <li><a href="/?id=javascript">JavaScript</a></li>
-  </ol>
+  ${list}
   <h2>${title}</h2>
   <p>${data}</p>
 </body>
@@ -37,8 +39,16 @@ let app = http.createServer(function (request, response) {
         response.end(template);
       });
     } else {
-      fs.readFile(`data/${title}`, "utf8", function (err, data) {
-        let template = `
+      fs.readdir("./data", (err, filelist) => {
+        let title = "Welcome";
+        let data = "Hello. Nodejs";
+        let list = `<ol>`;
+        for (let file of filelist) {
+          list += `<li><a href="/?id=${file}">${file}</a></li>`;
+        }
+        list += `</ol>`;
+        fs.readFile(`data/${title}`, "utf8", (err, data) => {
+          let template = `
 <!doctype html>
   <html>
     <head>
@@ -47,18 +57,15 @@ let app = http.createServer(function (request, response) {
     </head>
   <body>
   <h1><a href="/">WEB</a></h1>
-  <ol>
-    <li><a href="/?id=html">HTML</a></li>
-    <li><a href="/?id=css">CSS</a></li>
-    <li><a href="/?id=javascript">JavaScript</a></li>
-  </ol>
+  ${list}
   <h2>${title}</h2>
   <p>${data}</p>
 </body>
 </html>
 `;
-        response.writeHead(200);
-        response.end(template);
+          response.writeHead(200);
+          response.end(template);
+        });
       });
     }
   } else {
