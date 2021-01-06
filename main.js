@@ -2,34 +2,9 @@ let http = require("http");
 let fs = require("fs");
 let url = require("url");
 let qs = require("querystring");
-
-let templateHTML = (title, list, body, control) => {
-  return `
-<!doctype html>
-  <html>
-    <head>
-      <title>WEB1 - ${title}</title>
-      <meta charset="utf-8">
-    </head>
-  <body>
-  <h1><a href="/">WEB</a></h1>
-  ${list}
-  ${control}
-  ${body}
-</body>
-</html>
-`;
-};
-
-let templateList = (filelist) => {
-  let list = `<ol>`;
-
-  for (let file of filelist) {
-    list += `<li><a href="/?id=${file}">${file}</a></li>`;
-  }
-  list += `</ol>`;
-  return list;
-};
+let path = require("path");
+let sanitizeHtml = require("sanitize-html");
+let template = require("./lib/template");
 
 let app = http.createServer(function (request, response) {
   let _url = request.url;
@@ -43,31 +18,38 @@ let app = http.createServer(function (request, response) {
         let title = "Welcome";
         let data = "Hello. Nodejs";
 
-        let list = templateList(filelist);
+        let list = template.list(filelist);
 
-        let template = templateHTML(
+        let html = template.html(
           title,
           list,
           `<h2>${title}</h2> ${data}`,
           `<a href="/create">create </a>`
         );
         response.writeHead(200);
-        response.end(template);
+        response.end(html);
       });
     } else {
       fs.readdir("./data", (err, filelist) => {
-        let list = templateList(filelist);
-
-        fs.readFile(`data/${queryData.id}`, "utf8", (err, data) => {
+        let list = template.list(filelist);
+        let filteredId = path.parse(queryData.id).base;
+        fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
           let title = queryData.id;
-          let template = templateHTML(
+          let sanitizedTitle = sanitizeHtml(title);
+          let sanitizedData = sanitizeHtml(data);
+          let html = template.html(
             title,
             list,
-            `<h2>${title}</h2> ${data}`,
-            `<a href="/create">create </a> <p>  <a href="/update?id=${title}"> Update </a>`
+            `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
+            `<a href="/create">create </a> <p>  
+             <a href="/update?id=${sanitizedTitle}"> Update </a> <p>
+             <form action="/delete_process" method="post" onsubmit>
+              <input type="hidden" name="id" value=${sanitizedTitle}>
+              <input type="submit" value="Delete">
+             </form>`
           );
           response.writeHead(200);
-          response.end(template);
+          response.end(html);
         });
       });
     }
@@ -76,9 +58,9 @@ let app = http.createServer(function (request, response) {
       let title = "WEB - CREATE";
       // let data = "Hello. Nodejs";
 
-      let list = templateList(filelist);
+      let list = template.list(filelist);
 
-      let template = templateHTML(
+      let html = template.html(
         title,
         list,
         `
@@ -91,7 +73,7 @@ let app = http.createServer(function (request, response) {
         ""
       );
       response.writeHead(200);
-      response.end(template);
+      response.end(html);
     });
   } else if (pathname === "/create_process") {
     let body = "";
@@ -112,11 +94,12 @@ let app = http.createServer(function (request, response) {
     });
   } else if (pathname === "/update") {
     fs.readdir("./data", (err, filelist) => {
-      let list = templateList(filelist);
+      let list = template.list(filelist);
+      let filteredId = path.parse(queryData.id).base;
 
-      fs.readFile(`data/${queryData.id}`, "utf8", (err, data) => {
+      fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
         let title = queryData.id;
-        let template = templateHTML(
+        let html = template.html(
           title,
           list,
           `
@@ -127,10 +110,11 @@ let app = http.createServer(function (request, response) {
           <p><input type="submit"></p>
           </form>
           `,
-          `<a href="/create">create </a> <p>  <a href="/update?id=${title}"> Update </a>`
+          `<a href="/create">create </a> <p> 
+           <a href="/update?id=${title}"> Update </a>`
         );
         response.writeHead(200);
-        response.end(template);
+        response.end(html);
       });
     });
   } else if (pathname === "/update_process") {
@@ -153,6 +137,25 @@ let app = http.createServer(function (request, response) {
           response.writeHead(302, { location: `/?id=${title}` });
           response.end();
         });
+      });
+    });
+  } else if (pathname === "/delete_process") {
+    let body = "";
+    request.on("data", (data) => {
+      body += data;
+    });
+    request.on("end", () => {
+      let post = qs.parse(body);
+      let id = post.id;
+      let filteredId = path.parse(id).base;
+
+      fs.unlink(`data/${filteredId}`, (err) => {
+        if (err) {
+          console.log(err);
+        }
+
+        response.writeHead(302, { location: `/` });
+        response.end();
       });
     });
   } else {
