@@ -1,14 +1,59 @@
 const express = require("express");
+const fs = require("fs");
+const template = require("./lib/template");
+const sanitizeHtml = require("sanitize-html");
+const path = require("path");
 const app = express();
 const port = 3000;
 
+//routing
+// path에 들어가면 callback 함수 실행. 여기서는 response로 Hello World 출력.
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  fs.readdir("./data", (err, filelist) => {
+    let title = "Welcome";
+    let data = "Hello. Nodejs";
+
+    let list = template.list(filelist);
+
+    let html = template.html(
+      title,
+      list,
+      `<h2>${title}</h2> ${data}`,
+      `<a href="/create">create </a>`
+    );
+    res.send(html);
+  });
 });
 
+app.get("/page/:pageId", (req, res) => {
+  fs.readdir("./data", (err, filelist) => {
+    let list = template.list(filelist);
+    let filteredId = path.parse(req.params.pageId).base;
+    fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
+      let title = req.params.pageId;
+      let sanitizedTitle = sanitizeHtml(title);
+      let sanitizedData = sanitizeHtml(data);
+      let html = template.html(
+        title,
+        list,
+        `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
+        `<a href="/create">create </a> <p>
+             <a href="/update?id=${sanitizedTitle}"> Update </a> <p>
+             <form action="/delete_process" method="post" onsubmit>
+              <input type="hidden" name="id" value=${sanitizedTitle}>
+              <input type="submit" value="Delete">
+             </form>`
+      );
+      res.send(html);
+    });
+  });
+});
+
+//port를 listen. 읽는다고 생각하면 이해가 쉽다. 그렇게 해서 성공하면 출력.
 app.listen(port, () => {
   console.log(`Example app porting on http://localhost:${port}`);
 });
+
 // let http = require("http");
 // let fs = require("fs");
 // let url = require("url");
@@ -25,21 +70,6 @@ app.listen(port, () => {
 
 //   if (pathname === "/") {
 //     if (title === undefined) {
-//       fs.readdir("./data", (err, filelist) => {
-//         let title = "Welcome";
-//         let data = "Hello. Nodejs";
-
-//         let list = template.list(filelist);
-
-//         let html = template.html(
-//           title,
-//           list,
-//           `<h2>${title}</h2> ${data}`,
-//           `<a href="/create">create </a>`
-//         );
-//         response.writeHead(200);
-//         response.end(html);
-//       });
 //     } else {
 //       fs.readdir("./data", (err, filelist) => {
 //         let list = template.list(filelist);
