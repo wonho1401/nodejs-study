@@ -54,6 +54,8 @@ app.listen(port, () => {
   console.log(`Example app porting on http://localhost:${port}`);
 });
 
+//사용자가 추가시 form으로 보낼때
+app.post();
 // let http = require("http");
 // let fs = require("fs");
 // let url = require("url");
