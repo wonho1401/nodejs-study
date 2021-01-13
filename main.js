@@ -1,5 +1,6 @@
 const express = require("express");
 const fs = require("fs");
+const qs = require("querystring");
 const template = require("./lib/template");
 const sanitizeHtml = require("sanitize-html");
 const path = require("path");
@@ -38,7 +39,7 @@ app.get("/page/:pageId", (req, res) => {
         list,
         `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
         `<a href="/create">create </a> <p>
-             <a href="/update?id=${sanitizedTitle}"> Update </a> <p>
+             <a href="/update/${sanitizedTitle}"> Update </a> <p>
              <form action="/delete_process" method="post" onsubmit>
               <input type="hidden" name="id" value=${sanitizedTitle}>
               <input type="submit" value="Delete">
@@ -49,13 +50,124 @@ app.get("/page/:pageId", (req, res) => {
   });
 });
 
+app.get("/create", (req, res) => {
+  fs.readdir("./data", (err, filelist) => {
+    let title = "WEB - CREATE";
+    // let data = "Hello. Nodejs";
+
+    let list = template.list(filelist);
+
+    let html = template.html(
+      title,
+      list,
+      `
+        <form action="/create_process" method="post" >
+          <p><input type="text" name="title" placeholder="Title"></p>
+          <p><textarea name="description" placeholder="Description"></textarea></p>
+          <p><input type="submit"></p>
+          </form>
+      `,
+      ""
+    );
+    res.send(html);
+  });
+});
+
+app.post("/create_process", (req, res) => {
+  let body = "";
+  req.on("data", (data) => {
+    body += data;
+  });
+  req.on("end", () => {
+    let post = qs.parse(body);
+    let title = post.title;
+    let description = post.description;
+
+    fs.writeFile(`data/${title}`, description, (err) => {
+      if (err) throw err;
+
+      res.redirect(`/page/${title}`);
+    });
+  });
+});
+
+app.get("/update/:pageId", (req, res) => {
+  fs.readdir("./data", (err, filelist) => {
+    let list = template.list(filelist);
+    let filteredId = path.parse(req.params.pageId).base;
+
+    fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
+      let title = req.params.pageId;
+      let html = template.html(
+        title,
+        list,
+        `
+          <form action="/update_process" method="post" >
+          <input type="hidden" name="id" value=${title}>
+          <p><input type="text" name="title" placeholder="Title" value=${title}></p>
+          <p><textarea name="description" placeholder="Description">${data}</textarea></p>
+          <p><input type="submit"></p>
+          </form>
+          `,
+        `<a href="/create">create </a> <p>
+           <a href="/update/${title}"> Update </a>`
+      );
+      res.send(html);
+    });
+  });
+});
+
+app.post("/update_process", (req, res) => {
+  let body = "";
+  req.on("data", (data) => {
+    body += data;
+  });
+
+  req.on("end", () => {
+    let post = qs.parse(body);
+    let id = post.id;
+    let title = post.title;
+    let description = post.description;
+
+    fs.rename(`data/${id}`, `data/${title}`, (err) => {
+      if (err) throw err;
+
+      fs.writeFile(`data/${title}`, description, (err) => {
+        if (err) throw err;
+
+        res.redirect(302, `page/${title}`);
+        res.end();
+      });
+    });
+  });
+});
+
+app.post("/delete_process", (req, res) => {
+  let body = "";
+  req.on("data", (data) => {
+    body += data;
+  });
+  req.on("end", () => {
+    let post = qs.parse(body);
+    let id = post.id;
+    let filteredId = path.parse(id).base;
+
+    fs.unlink(`data/${filteredId}`, (err) => {
+      if (err) {
+        console.log(err);
+      }
+
+      res.redirect(302, `/`);
+      res.end();
+    });
+  });
+});
+
 //port를 listen. 읽는다고 생각하면 이해가 쉽다. 그렇게 해서 성공하면 출력.
 app.listen(port, () => {
   console.log(`Example app porting on http://localhost:${port}`);
 });
 
-//사용자가 추가시 form으로 보낼때
-app.post();
 // let http = require("http");
 // let fs = require("fs");
 // let url = require("url");
@@ -97,114 +209,18 @@ app.post();
 //       });
 //     }
 //   } else if (pathname === "/create") {
-//     fs.readdir("./data", (err, filelist) => {
-//       let title = "WEB - CREATE";
-//       // let data = "Hello. Nodejs";
-
-//       let list = template.list(filelist);
-
-//       let html = template.html(
-//         title,
-//         list,
-//         `
-//         <form action="/create_process" method="post" >
-//           <p><input type="text" name="title" placeholder="Title"></p>
-//           <p><textarea name="description" placeholder="Description"></textarea></p>
-//           <p><input type="submit"></p>
-//           </form>
-//       `,
-//         ""
-//       );
-//       response.writeHead(200);
-//       response.end(html);
-//     });
+//
 //   } else if (pathname === "/create_process") {
-//     let body = "";
-//     request.on("data", (data) => {
-//       body += data;
-//     });
-//     request.on("end", () => {
-//       let post = qs.parse(body);
-//       let title = post.title;
-//       let description = post.description;
-
-//       fs.writeFile(`data/${title}`, description, (err) => {
-//         if (err) throw err;
-
-//         response.writeHead(302, { location: `/?id=${title}` });
-//         response.end();
-//       });
-//     });
+//
 //   } else if (pathname === "/update") {
-//     fs.readdir("./data", (err, filelist) => {
-//       let list = template.list(filelist);
-//       let filteredId = path.parse(queryData.id).base;
-
-//       fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
-//         let title = queryData.id;
-//         let html = template.html(
-//           title,
-//           list,
-//           `
-//           <form action="/update_process" method="post" >
-//           <input type="hidden" name="id" value=${title}>
-//           <p><input type="text" name="title" placeholder="Title" value=${title}></p>
-//           <p><textarea name="description" placeholder="Description">${data}</textarea></p>
-//           <p><input type="submit"></p>
-//           </form>
-//           `,
-//           `<a href="/create">create </a> <p>
-//            <a href="/update?id=${title}"> Update </a>`
-//         );
-//         response.writeHead(200);
-//         response.end(html);
-//       });
-//     });
+//
 //   } else if (pathname === "/update_process") {
-//     let body = "";
-//     request.on("data", (data) => {
-//       body += data;
-//     });
-
-//     request.on("end", () => {
-//       let post = qs.parse(body);
-//       let id = post.id;
-//       let title = post.title;
-//       let description = post.description;
-
-//       fs.rename(`data/${id}`, `data/${title}`, (err) => {
-//         if (err) throw err;
-
-//         fs.writeFile(`data/${title}`, description, (err) => {
-//           if (err) throw err;
-
-//           response.writeHead(302, { location: `/?id=${title}` });
-//           response.end();
-//         });
-//       });
+//
 //     });
 //   } else if (pathname === "/delete_process") {
-//     let body = "";
-//     request.on("data", (data) => {
-//       body += data;
-//     });
-//     request.on("end", () => {
-//       let post = qs.parse(body);
-//       let id = post.id;
-//       let filteredId = path.parse(id).base;
-
-//       fs.unlink(`data/${filteredId}`, (err) => {
-//         if (err) {
-//           console.log(err);
-//         }
-
-//         response.writeHead(302, { location: `/` });
-//         response.end();
-//       });
-//     });
+//
 //   } else {
 //     response.writeHead(404);
 //     response.end("Not found");
 //   }
 // });
-// app.listen(3000);
