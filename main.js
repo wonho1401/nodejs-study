@@ -3,9 +3,13 @@ const fs = require("fs");
 const qs = require("querystring");
 const template = require("./lib/template");
 const sanitizeHtml = require("sanitize-html");
+const bodyParser = require("body-parser");
 const path = require("path");
 const app = express();
 const port = 3000;
+
+//form 데이터 처리
+app.use(bodyParser.urlencoded({ extended: false }));
 
 //routing
 // path에 들어가면 callback 함수 실행. 여기서는 response로 Hello World 출력.
@@ -74,20 +78,31 @@ app.get("/create", (req, res) => {
 });
 
 app.post("/create_process", (req, res) => {
-  let body = "";
-  req.on("data", (data) => {
-    body += data;
-  });
-  req.on("end", () => {
-    let post = qs.parse(body);
-    let title = post.title;
-    let description = post.description;
+  // let body = "";
+  // req.on("data", (data) => {
+  //   body += data;
+  // });
+  // req.on("end", () => {
+  //   let post = qs.parse(body);
+  //   let title = post.title;
+  //   let description = post.description;
 
-    fs.writeFile(`data/${title}`, description, (err) => {
-      if (err) throw err;
+  //   fs.writeFile(`data/${title}`, description, (err) => {
+  //     if (err) throw err;
 
-      res.redirect(`/page/${title}`);
-    });
+  //     res.redirect(`/page/${title}`);
+  //   });
+  // });
+
+  //body-parser 미들웨어 사용시.
+  let post = req.body;
+  let title = post.title;
+  let description = post.description;
+
+  fs.writeFile(`data/${title}`, description, (err) => {
+    if (err) throw err;
+
+    res.redirect(`/page/${title}`);
   });
 });
 
@@ -118,48 +133,35 @@ app.get("/update/:pageId", (req, res) => {
 });
 
 app.post("/update_process", (req, res) => {
-  let body = "";
-  req.on("data", (data) => {
-    body += data;
-  });
+  let post = req.body;
+  let id = post.id;
+  let title = post.title;
+  let description = post.description;
 
-  req.on("end", () => {
-    let post = qs.parse(body);
-    let id = post.id;
-    let title = post.title;
-    let description = post.description;
+  fs.rename(`data/${id}`, `data/${title}`, (err) => {
+    if (err) throw err;
 
-    fs.rename(`data/${id}`, `data/${title}`, (err) => {
+    fs.writeFile(`data/${title}`, description, (err) => {
       if (err) throw err;
 
-      fs.writeFile(`data/${title}`, description, (err) => {
-        if (err) throw err;
-
-        res.redirect(302, `page/${title}`);
-        res.end();
-      });
+      res.redirect(302, `page/${title}`);
+      res.end();
     });
   });
 });
 
 app.post("/delete_process", (req, res) => {
-  let body = "";
-  req.on("data", (data) => {
-    body += data;
-  });
-  req.on("end", () => {
-    let post = qs.parse(body);
-    let id = post.id;
-    let filteredId = path.parse(id).base;
+  let post = req.body;
+  let id = post.id;
+  let filteredId = path.parse(id).base;
 
-    fs.unlink(`data/${filteredId}`, (err) => {
-      if (err) {
-        console.log(err);
-      }
+  fs.unlink(`data/${filteredId}`, (err) => {
+    if (err) {
+      console.log(err);
+    }
 
-      res.redirect(302, `/`);
-      res.end();
-    });
+    res.redirect(302, `/`);
+    res.end();
   });
 });
 
