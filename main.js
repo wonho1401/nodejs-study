@@ -5,11 +5,14 @@ const template = require("./lib/template");
 const sanitizeHtml = require("sanitize-html");
 const bodyParser = require("body-parser");
 const path = require("path");
+const compression = require("compression");
 const app = express();
 const port = 3000;
 
 //form 데이터 처리
+//app.use를 통해 middleware가 장착되는 느낌.
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(compression());
 
 //routing
 // path에 들어가면 callback 함수 실행. 여기서는 response로 Hello World 출력.
