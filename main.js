@@ -13,71 +13,71 @@ const port = 3000;
 //app.use를 통해 middleware가 장착되는 느낌.
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(compression());
+app.get("*", (req, res, next) => {
+  fs.readdir("./data", (err, filelist) => {
+    req.list = filelist;
+    next();
+  });
+});
 
 //routing
 // path에 들어가면 callback 함수 실행. 여기서는 response로 Hello World 출력.
 app.get("/", (req, res) => {
-  fs.readdir("./data", (err, filelist) => {
-    let title = "Welcome";
-    let data = "Hello. Nodejs";
+  let title = "Welcome";
+  let data = "Hello. Nodejs";
 
-    let list = template.list(filelist);
+  let list = template.list(req.list);
 
-    let html = template.html(
-      title,
-      list,
-      `<h2>${title}</h2> ${data}`,
-      `<a href="/create">create </a>`
-    );
-    res.send(html);
-  });
+  let html = template.html(
+    title,
+    list,
+    `<h2>${title}</h2> ${data}`,
+    `<a href="/create">create </a>`
+  );
+  res.send(html);
 });
 
 app.get("/page/:pageId", (req, res) => {
-  fs.readdir("./data", (err, filelist) => {
-    let list = template.list(filelist);
-    let filteredId = path.parse(req.params.pageId).base;
-    fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
-      let title = req.params.pageId;
-      let sanitizedTitle = sanitizeHtml(title);
-      let sanitizedData = sanitizeHtml(data);
-      let html = template.html(
-        title,
-        list,
-        `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
-        `<a href="/create">create </a> <p>
+  let list = template.list(req.list);
+  let filteredId = path.parse(req.params.pageId).base;
+  fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
+    let title = req.params.pageId;
+    let sanitizedTitle = sanitizeHtml(title);
+    let sanitizedData = sanitizeHtml(data);
+    let html = template.html(
+      title,
+      list,
+      `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
+      `<a href="/create">create </a> <p>
              <a href="/update/${sanitizedTitle}"> Update </a> <p>
              <form action="/delete_process" method="post" onsubmit>
               <input type="hidden" name="id" value=${sanitizedTitle}>
               <input type="submit" value="Delete">
              </form>`
-      );
-      res.send(html);
-    });
+    );
+    res.send(html);
   });
 });
 
 app.get("/create", (req, res) => {
-  fs.readdir("./data", (err, filelist) => {
-    let title = "WEB - CREATE";
-    // let data = "Hello. Nodejs";
+  let title = "WEB - CREATE";
+  // let data = "Hello. Nodejs";
 
-    let list = template.list(filelist);
+  let list = template.list(req.list);
 
-    let html = template.html(
-      title,
-      list,
-      `
+  let html = template.html(
+    title,
+    list,
+    `
         <form action="/create_process" method="post" >
           <p><input type="text" name="title" placeholder="Title"></p>
           <p><textarea name="description" placeholder="Description"></textarea></p>
           <p><input type="submit"></p>
           </form>
       `,
-      ""
-    );
-    res.send(html);
-  });
+    ""
+  );
+  res.send(html);
 });
 
 app.post("/create_process", (req, res) => {
@@ -110,16 +110,15 @@ app.post("/create_process", (req, res) => {
 });
 
 app.get("/update/:pageId", (req, res) => {
-  fs.readdir("./data", (err, filelist) => {
-    let list = template.list(filelist);
-    let filteredId = path.parse(req.params.pageId).base;
+  let list = template.list(req.list);
+  let filteredId = path.parse(req.params.pageId).base;
 
-    fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
-      let title = req.params.pageId;
-      let html = template.html(
-        title,
-        list,
-        `
+  fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
+    let title = req.params.pageId;
+    let html = template.html(
+      title,
+      list,
+      `
           <form action="/update_process" method="post" >
           <input type="hidden" name="id" value=${title}>
           <p><input type="text" name="title" placeholder="Title" value=${title}></p>
@@ -127,11 +126,10 @@ app.get("/update/:pageId", (req, res) => {
           <p><input type="submit"></p>
           </form>
           `,
-        `<a href="/create">create </a> <p>
+      `<a href="/create">create </a> <p>
            <a href="/update/${title}"> Update </a>`
-      );
-      res.send(html);
-    });
+    );
+    res.send(html);
   });
 });
 
@@ -172,60 +170,3 @@ app.post("/delete_process", (req, res) => {
 app.listen(port, () => {
   console.log(`Example app porting on http://localhost:${port}`);
 });
-
-// let http = require("http");
-// let fs = require("fs");
-// let url = require("url");
-// let qs = require("querystring");
-// let path = require("path");
-// let sanitizeHtml = require("sanitize-html");
-// let template = require("./lib/template");
-
-// let app = http.createServer(function (request, response) {
-//   let _url = request.url;
-//   let queryData = url.parse(_url, true).query;
-//   let pathname = url.parse(_url, true).pathname;
-//   let title = queryData.id;
-
-//   if (pathname === "/") {
-//     if (title === undefined) {
-//     } else {
-//       fs.readdir("./data", (err, filelist) => {
-//         let list = template.list(filelist);
-//         let filteredId = path.parse(queryData.id).base;
-//         fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
-//           let title = queryData.id;
-//           let sanitizedTitle = sanitizeHtml(title);
-//           let sanitizedData = sanitizeHtml(data);
-//           let html = template.html(
-//             title,
-//             list,
-//             `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
-//             `<a href="/create">create </a> <p>
-//              <a href="/update?id=${sanitizedTitle}"> Update </a> <p>
-//              <form action="/delete_process" method="post" onsubmit>
-//               <input type="hidden" name="id" value=${sanitizedTitle}>
-//               <input type="submit" value="Delete">
-//              </form>`
-//           );
-//           response.writeHead(200);
-//           response.end(html);
-//         });
-//       });
-//     }
-//   } else if (pathname === "/create") {
-//
-//   } else if (pathname === "/create_process") {
-//
-//   } else if (pathname === "/update") {
-//
-//   } else if (pathname === "/update_process") {
-//
-//     });
-//   } else if (pathname === "/delete_process") {
-//
-//   } else {
-//     response.writeHead(404);
-//     response.end("Not found");
-//   }
-// });
