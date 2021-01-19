@@ -9,7 +9,7 @@ const compression = require("compression");
 const app = express();
 const port = 3000;
 
-app.use(express.static("public"));
+app.use(express.static("public")); // 정적인 파일을 사용하는 방법.
 //form 데이터 처리
 //app.use를 통해 middleware가 장착되는 느낌.
 app.use(bodyParser.urlencoded({ extended: false }));
