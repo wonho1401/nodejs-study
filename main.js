@@ -9,6 +9,7 @@ const compression = require("compression");
 const app = express();
 const port = 3000;
 
+app.use(express.static("public"));
 //form 데이터 처리
 //app.use를 통해 middleware가 장착되는 느낌.
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -31,7 +32,9 @@ app.get("/", (req, res) => {
   let html = template.html(
     title,
     list,
-    `<h2>${title}</h2> ${data}`,
+    `<h2>${title}</h2> ${data}
+    <img src="/images/hello.jpg" style="width:600px; height:400px; display:flex; flex-direction:column; padding-top:20px;">
+    `,
     `<a href="/create">create </a>`
   );
   res.send(html);
