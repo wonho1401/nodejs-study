@@ -40,25 +40,29 @@ app.get("/", (req, res) => {
   res.send(html);
 });
 
-app.get("/page/:pageId", (req, res) => {
-  let list = template.list(req.list);
+app.get("/page/:pageId", (req, res, next) => {
   let filteredId = path.parse(req.params.pageId).base;
   fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
-    let title = req.params.pageId;
-    let sanitizedTitle = sanitizeHtml(title);
-    let sanitizedData = sanitizeHtml(data);
-    let html = template.html(
-      title,
-      list,
-      `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
-      `<a href="/create">create </a> <p>
+    if (err) {
+      next(err);
+    } else {
+      let list = template.list(req.list);
+      let title = req.params.pageId;
+      let sanitizedTitle = sanitizeHtml(title);
+      let sanitizedData = sanitizeHtml(data);
+      let html = template.html(
+        title,
+        list,
+        `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
+        `<a href="/create">create </a> <p>
              <a href="/update/${sanitizedTitle}"> Update </a> <p>
              <form action="/delete_process" method="post" onsubmit>
               <input type="hidden" name="id" value=${sanitizedTitle}>
               <input type="submit" value="Delete">
              </form>`
-    );
-    res.send(html);
+      );
+      res.send(html);
+    }
   });
 });
 
@@ -84,22 +88,6 @@ app.get("/create", (req, res) => {
 });
 
 app.post("/create_process", (req, res) => {
-  // let body = "";
-  // req.on("data", (data) => {
-  //   body += data;
-  // });
-  // req.on("end", () => {
-  //   let post = qs.parse(body);
-  //   let title = post.title;
-  //   let description = post.description;
-
-  //   fs.writeFile(`data/${title}`, description, (err) => {
-  //     if (err) throw err;
-
-  //     res.redirect(`/page/${title}`);
-  //   });
-  // });
-
   //body-parser 미들웨어 사용시.
   let post = req.body;
   let title = post.title;
@@ -167,6 +155,11 @@ app.post("/delete_process", (req, res) => {
     res.redirect(302, `/`);
     res.end();
   });
+});
+
+//가장 간단한 에러처리. 맨 아래에 두는 이유는? 맞는 것을 찾지 못했을때 가장 아래로 오기 때문에.
+app.use((req, res, next) => {
+  res.status(404).send("Sorry, Can't find that.");
 });
 
 //port를 listen. 읽는다고 생각하면 이해가 쉽다. 그렇게 해서 성공하면 출력.
