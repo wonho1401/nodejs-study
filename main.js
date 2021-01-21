@@ -40,7 +40,7 @@ app.get("/", (req, res) => {
   res.send(html);
 });
 
-app.get("/page/:pageId", (req, res, next) => {
+app.get("/topic/:pageId", (req, res, next) => {
   let filteredId = path.parse(req.params.pageId).base;
   fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
     if (err) {
