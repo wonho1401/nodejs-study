@@ -21,7 +21,7 @@ app.get("*", (req, res, next) => {
   });
 });
 
-//routing
+//routing -> 순서가 중요하다. 
 // path에 들어가면 callback 함수 실행. 여기서는 response로 Hello World 출력.
 app.get("/", (req, res) => {
   let title = "Welcome";
@@ -35,9 +35,100 @@ app.get("/", (req, res) => {
     `<h2>${title}</h2> ${data}
     <img src="/images/hello.jpg" style="width:600px; height:400px; display:flex; flex-direction:column; padding-top:20px;">
     `,
-    `<a href="/create">create </a>`
+    `<a href="/topic/create">create </a>`
   );
   res.send(html);
+});
+
+app.get("/topic/create", (req, res) => {
+  let title = "WEB - CREATE";
+  // let data = "Hello. Nodejs";
+
+  let list = template.list(req.list);
+
+  let html = template.html(
+    title,
+    list,
+    `
+        <form action="/topic/create_process" method="post" >
+          <p><input type="text" name="title" placeholder="Title"></p>
+          <p><textarea name="description" placeholder="Description"></textarea></p>
+          <p><input type="submit"></p>
+          </form>
+      `,
+    ""
+  );
+  res.send(html);
+});
+
+app.post("/topic/create_process", (req, res) => {
+  //body-parser 미들웨어 사용시.
+  let post = req.body;
+  let title = post.title;
+  let description = post.description;
+
+  fs.writeFile(`data/${title}`, description, (err) => {
+    if (err) throw err;
+
+    res.redirect(`/topic/${title}`);
+  });
+});
+
+app.get("/topic/update/:pageId", (req, res) => {
+  let list = template.list(req.list);
+  let filteredId = path.parse(req.params.pageId).base;
+
+  fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
+    let title = req.params.pageId;
+    let html = template.html(
+      title,
+      list,
+      `
+          <form action="/topic/update_process" method="post" >
+          <input type="hidden" name="id" value=${title}>
+          <p><input type="text" name="title" placeholder="Title" value=${title}></p>
+          <p><textarea name="description" placeholder="Description">${data}</textarea></p>
+          <p><input type="submit"></p>
+          </form>
+          `,
+      `<a href="/create">create </a> <p>
+           <a href="/update/${title}"> Update </a>`
+    );
+    res.send(html);
+  });
+});
+
+app.post("/topic/update_process", (req, res) => {
+  let post = req.body;
+  let id = post.id;
+  let title = post.title;
+  let description = post.description;
+
+  fs.rename(`data/${id}`, `data/${title}`, (err) => {
+    if (err) throw err;
+
+    fs.writeFile(`data/${title}`, description, (err) => {
+      if (err) throw err;
+
+      res.redirect(302, `/topic/${title}`);
+      res.end();
+    });
+  });
+});
+
+app.post("/topic/delete_process", (req, res) => {
+  let post = req.body;
+  let id = post.id;
+  let filteredId = path.parse(id).base;
+
+  fs.unlink(`data/${filteredId}`, (err) => {
+    if (err) {
+      console.log(err);
+    }
+
+    res.redirect(302, `/`);
+    res.end();
+  });
 });
 
 app.get("/topic/:pageId", (req, res, next) => {
@@ -54,106 +145,15 @@ app.get("/topic/:pageId", (req, res, next) => {
         title,
         list,
         `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
-        `<a href="/create">create </a> <p>
-             <a href="/update/${sanitizedTitle}"> Update </a> <p>
-             <form action="/delete_process" method="post" onsubmit>
+        `<a href="/topic/create">create </a> <p>
+             <a href="/topic/update/${sanitizedTitle}"> Update </a> <p>
+             <form action="/topic/delete_process" method="post" onsubmit>
               <input type="hidden" name="id" value=${sanitizedTitle}>
               <input type="submit" value="Delete">
              </form>`
       );
       res.send(html);
     }
-  });
-});
-
-app.get("/create", (req, res) => {
-  let title = "WEB - CREATE";
-  // let data = "Hello. Nodejs";
-
-  let list = template.list(req.list);
-
-  let html = template.html(
-    title,
-    list,
-    `
-        <form action="/create_process" method="post" >
-          <p><input type="text" name="title" placeholder="Title"></p>
-          <p><textarea name="description" placeholder="Description"></textarea></p>
-          <p><input type="submit"></p>
-          </form>
-      `,
-    ""
-  );
-  res.send(html);
-});
-
-app.post("/create_process", (req, res) => {
-  //body-parser 미들웨어 사용시.
-  let post = req.body;
-  let title = post.title;
-  let description = post.description;
-
-  fs.writeFile(`data/${title}`, description, (err) => {
-    if (err) throw err;
-
-    res.redirect(`/page/${title}`);
-  });
-});
-
-app.get("/update/:pageId", (req, res) => {
-  let list = template.list(req.list);
-  let filteredId = path.parse(req.params.pageId).base;
-
-  fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
-    let title = req.params.pageId;
-    let html = template.html(
-      title,
-      list,
-      `
-          <form action="/update_process" method="post" >
-          <input type="hidden" name="id" value=${title}>
-          <p><input type="text" name="title" placeholder="Title" value=${title}></p>
-          <p><textarea name="description" placeholder="Description">${data}</textarea></p>
-          <p><input type="submit"></p>
-          </form>
-          `,
-      `<a href="/create">create </a> <p>
-           <a href="/update/${title}"> Update </a>`
-    );
-    res.send(html);
-  });
-});
-
-app.post("/update_process", (req, res) => {
-  let post = req.body;
-  let id = post.id;
-  let title = post.title;
-  let description = post.description;
-
-  fs.rename(`data/${id}`, `data/${title}`, (err) => {
-    if (err) throw err;
-
-    fs.writeFile(`data/${title}`, description, (err) => {
-      if (err) throw err;
-
-      res.redirect(302, `page/${title}`);
-      res.end();
-    });
-  });
-});
-
-app.post("/delete_process", (req, res) => {
-  let post = req.body;
-  let id = post.id;
-  let filteredId = path.parse(id).base;
-
-  fs.unlink(`data/${filteredId}`, (err) => {
-    if (err) {
-      console.log(err);
-    }
-
-    res.redirect(302, `/`);
-    res.end();
   });
 });
 
