@@ -1,11 +1,10 @@
 const express = require("express");
 const fs = require("fs");
-const qs = require("querystring");
-const template = require("./lib/template");
-const sanitizeHtml = require("sanitize-html");
+const topicRouter = require("./routes/topic");
+const indexRouter = require("./routes/index");
 const bodyParser = require("body-parser");
-const path = require("path");
 const compression = require("compression");
+const helmet = require("helmet");
 const app = express();
 const port = 3000;
 
@@ -14,6 +13,7 @@ app.use(express.static("public")); // 정적인 파일을 사용하는 방법.
 //app.use를 통해 middleware가 장착되는 느낌.
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(compression());
+app.use(helmet());
 app.get("*", (req, res, next) => {
   fs.readdir("./data", (err, filelist) => {
     req.list = filelist;
@@ -21,141 +21,9 @@ app.get("*", (req, res, next) => {
   });
 });
 
-//routing -> 순서가 중요하다. 
-// path에 들어가면 callback 함수 실행. 여기서는 response로 Hello World 출력.
-app.get("/", (req, res) => {
-  let title = "Welcome";
-  let data = "Hello. Nodejs";
-
-  let list = template.list(req.list);
-
-  let html = template.html(
-    title,
-    list,
-    `<h2>${title}</h2> ${data}
-    <img src="/images/hello.jpg" style="width:600px; height:400px; display:flex; flex-direction:column; padding-top:20px;">
-    `,
-    `<a href="/topic/create">create </a>`
-  );
-  res.send(html);
-});
-
-app.get("/topic/create", (req, res) => {
-  let title = "WEB - CREATE";
-  // let data = "Hello. Nodejs";
-
-  let list = template.list(req.list);
-
-  let html = template.html(
-    title,
-    list,
-    `
-        <form action="/topic/create_process" method="post" >
-          <p><input type="text" name="title" placeholder="Title"></p>
-          <p><textarea name="description" placeholder="Description"></textarea></p>
-          <p><input type="submit"></p>
-          </form>
-      `,
-    ""
-  );
-  res.send(html);
-});
-
-app.post("/topic/create_process", (req, res) => {
-  //body-parser 미들웨어 사용시.
-  let post = req.body;
-  let title = post.title;
-  let description = post.description;
-
-  fs.writeFile(`data/${title}`, description, (err) => {
-    if (err) throw err;
-
-    res.redirect(`/topic/${title}`);
-  });
-});
-
-app.get("/topic/update/:pageId", (req, res) => {
-  let list = template.list(req.list);
-  let filteredId = path.parse(req.params.pageId).base;
-
-  fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
-    let title = req.params.pageId;
-    let html = template.html(
-      title,
-      list,
-      `
-          <form action="/topic/update_process" method="post" >
-          <input type="hidden" name="id" value=${title}>
-          <p><input type="text" name="title" placeholder="Title" value=${title}></p>
-          <p><textarea name="description" placeholder="Description">${data}</textarea></p>
-          <p><input type="submit"></p>
-          </form>
-          `,
-      `<a href="/create">create </a> <p>
-           <a href="/update/${title}"> Update </a>`
-    );
-    res.send(html);
-  });
-});
-
-app.post("/topic/update_process", (req, res) => {
-  let post = req.body;
-  let id = post.id;
-  let title = post.title;
-  let description = post.description;
-
-  fs.rename(`data/${id}`, `data/${title}`, (err) => {
-    if (err) throw err;
-
-    fs.writeFile(`data/${title}`, description, (err) => {
-      if (err) throw err;
-
-      res.redirect(302, `/topic/${title}`);
-      res.end();
-    });
-  });
-});
-
-app.post("/topic/delete_process", (req, res) => {
-  let post = req.body;
-  let id = post.id;
-  let filteredId = path.parse(id).base;
-
-  fs.unlink(`data/${filteredId}`, (err) => {
-    if (err) {
-      console.log(err);
-    }
-
-    res.redirect(302, `/`);
-    res.end();
-  });
-});
-
-app.get("/topic/:pageId", (req, res, next) => {
-  let filteredId = path.parse(req.params.pageId).base;
-  fs.readFile(`data/${filteredId}`, "utf8", (err, data) => {
-    if (err) {
-      next(err);
-    } else {
-      let list = template.list(req.list);
-      let title = req.params.pageId;
-      let sanitizedTitle = sanitizeHtml(title);
-      let sanitizedData = sanitizeHtml(data);
-      let html = template.html(
-        title,
-        list,
-        `<h2>${sanitizedTitle}</h2> ${sanitizedData}`,
-        `<a href="/topic/create">create </a> <p>
-             <a href="/topic/update/${sanitizedTitle}"> Update </a> <p>
-             <form action="/topic/delete_process" method="post" onsubmit>
-              <input type="hidden" name="id" value=${sanitizedTitle}>
-              <input type="submit" value="Delete">
-             </form>`
-      );
-      res.send(html);
-    }
-  });
-});
+app.use("/topic", topicRouter); // /topic가 들어가는 주소에는 topicRouter라는 미들웨어를 적용시키겠다~ 이말이다.
+app.use("/", indexRouter);
+//routing -> 순서가 중요하다.
 
 //가장 간단한 에러처리. 맨 아래에 두는 이유는? 맞는 것을 찾지 못했을때 가장 아래로 오기 때문에.
 app.use((req, res, next) => {
@@ -166,3 +34,5 @@ app.use((req, res, next) => {
 app.listen(port, () => {
   console.log(`Example app porting on http://localhost:${port}`);
 });
+
+//다음과 같은 것은 기본적인 코드이기 때문에 express-generator 를 이용하면 쉽게 셋업할 수 있다.
