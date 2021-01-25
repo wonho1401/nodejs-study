@@ -16,8 +16,8 @@ app.use(compression());
 app.use(helmet());
 app.get("*", (req, res, next) => {
   fs.readdir("./data", (err, filelist) => {
-    req.list = filelist;
-    next();
+    req.list = filelist; //filelist를 req.list에 담는거임.
+    next(); //다음으로 호출될 미들웨어
   });
 });
 
@@ -26,7 +26,7 @@ app.use("/", indexRouter);
 //routing -> 순서가 중요하다.
 
 //가장 간단한 에러처리. 맨 아래에 두는 이유는? 맞는 것을 찾지 못했을때 가장 아래로 오기 때문에.
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).send("Sorry, Can't find that.");
 });
 
