@@ -6,6 +6,10 @@ const sanitizeHtml = require("sanitize-html");
 const template = require("../lib/template");
 
 router.get("/create", (req, res) => {
+  if (IsAuthenticated(req, res) === false) {
+    res.end("Login required");
+    return false;
+  } //접근 제어 part
   let title = "WEB - CREATE";
   // let data = "Hello. Nodejs";
 
