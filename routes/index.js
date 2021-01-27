@@ -3,16 +3,14 @@ const router = express.Router();
 const template = require("../lib/template");
 const cookie = require("cookie");
 
-// ‼️ 해야할 것: 모든 페이지 쿠키에 따라 login logout 나타내기.
-// logout_process 404 not found 잡기.
-// 접근제어
-
 const IsAuthenticated = (req, res) => {
   let isLoggedIn = false;
   let cookies = {};
   if (req.headers.cookie) {
     cookies = cookie.parse(req.headers.cookie);
   }
+
+  //이 코드는 보안에 아주 취약한 코드임. 세션을 이용한 방식을 이용해야함. + Hash => 원래값이 뭔지 모르게됨. => 보안 Good
   if (
     cookies.email === "wonho1401@gmail.com" &&
     cookies.password === "111111"
@@ -97,3 +95,5 @@ router.get("/logout_process", (req, res) => {
 });
 
 module.exports = router;
+module.exports.IsAuthenticated = IsAuthenticated;
+module.exports.authStatusUI = authStatusUI;
