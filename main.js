@@ -2,9 +2,12 @@ const express = require("express");
 const fs = require("fs");
 const topicRouter = require("./routes/topic");
 const indexRouter = require("./routes/index");
+const authRouter = require("./routes/auth");
 const bodyParser = require("body-parser");
 const compression = require("compression");
 const helmet = require("helmet");
+const session = require("express-session");
+const FileStore = require("session-file-store")(session);
 const app = express();
 const port = 3000;
 
@@ -14,6 +17,15 @@ app.use(express.static("public")); // 정적인 파일을 사용하는 방법.
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(compression());
 app.use(helmet());
+app.use(
+  session({
+    secret: "Keyboard Cat", //필수적으로 들어가야하는 값. 나중에는 꼭 변수처리하고 공유되지 않게 해야함.
+    resave: false,
+    saveUninitialized: true, //true로 놔야 세션이 있을때만 실행이 된다. false로 두게되면 서버에 큰 부담을 줄 수 있음.
+    store: new FileStore({ logFn: function () {} }),
+  })
+);
+
 app.get("*", (req, res, next) => {
   fs.readdir("./data", (err, filelist) => {
     req.list = filelist; //filelist를 req.list에 담는거임.
@@ -23,6 +35,7 @@ app.get("*", (req, res, next) => {
 
 app.use("/topic", topicRouter); // /topic가 들어가는 주소에는 topicRouter라는 미들웨어를 적용시키겠다~ 이말이다.
 app.use("/", indexRouter);
+app.use("/auth", authRouter);
 //routing -> 순서가 중요하다.
 
 //가장 간단한 에러처리. 맨 아래에 두는 이유는? 맞는 것을 찾지 못했을때 가장 아래로 오기 때문에.

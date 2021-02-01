@@ -4,13 +4,13 @@ const path = require("path");
 const fs = require("fs");
 const sanitizeHtml = require("sanitize-html");
 const template = require("../lib/template");
-const authFunc = require("./index");
+const auth = require("../lib/auth");
 
 router.get("/create", (req, res) => {
-  if (authFunc.IsAuthenticated(req, res) === false) {
-    res.end("Login required");
-    return false;
-  } //접근 제어 part
+  // if (authFunc.IsAuthenticated(req, res) === false) {
+  //   res.end("Login required");
+  //   return false;
+  // } //접근 제어 part
   let title = "WEB - CREATE";
   // let data = "Hello. Nodejs";
 
@@ -27,7 +27,7 @@ router.get("/create", (req, res) => {
           </form>
       `,
     "",
-    authFunc.authStatusUI(req, res)
+    auth.statusUI(req, res)
   );
   res.send(html);
 });
@@ -46,11 +46,11 @@ router.post("/create_process", (req, res) => {
 });
 
 router.get("/update/:pageId", (req, res) => {
-  if (authFunc.IsAuthenticated(req, res) === false) {
-    res.end("Login required");
-    res.redirect(302, "/login");
-    return false;
-  }
+  // if (authFunc.IsAuthenticated(req, res) === false) {
+  //   res.end("Login required");
+  //   res.redirect(302, "/login");
+  //   return false;
+  // }
   let list = template.list(req.list);
   let filteredId = path.parse(req.params.pageId).base;
 
@@ -69,7 +69,7 @@ router.get("/update/:pageId", (req, res) => {
           `,
       `<a href="/topic/create">create </a> <p>
            <a href="/topic/update/${title}"> Update </a>`,
-      authFunc.authStatusUI(req, res)
+      auth.statusUI(req, res)
     );
     res.send(html);
   });
@@ -94,10 +94,10 @@ router.post("/update_process", (req, res) => {
 });
 
 router.post("/delete_process", (req, res) => {
-  if (authFunc.IsAuthenticated(req, res) === false) {
-    res.end("Login required");
-    return false;
-  }
+  // if (authFunc.IsAuthenticated(req, res) === false) {
+  //   res.end("Login required");
+  //   return false;
+  // }
   let post = req.body;
   let id = post.id;
   let filteredId = path.parse(id).base;
@@ -132,7 +132,7 @@ router.get("/:pageId", (req, res, next) => {
               <input type="hidden" name="id" value=${sanitizedTitle}>
               <input type="submit" value="Delete">
              </form>`,
-        authFunc.authStatusUI(req, res)
+        auth.statusUI(req, res)
       );
       res.send(html);
     }
