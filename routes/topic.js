@@ -7,10 +7,10 @@ const template = require("../lib/template");
 const auth = require("../lib/auth");
 
 router.get("/create", (req, res) => {
-  // if (authFunc.IsAuthenticated(req, res) === false) {
-  //   res.end("Login required");
-  //   return false;
-  // } //접근 제어 part
+  if (!auth.isOwner(req, res)) {
+    res.redirect("/");
+    return false;
+  } //접근 제어 part
   let title = "WEB - CREATE";
   // let data = "Hello. Nodejs";
 
@@ -46,11 +46,10 @@ router.post("/create_process", (req, res) => {
 });
 
 router.get("/update/:pageId", (req, res) => {
-  // if (authFunc.IsAuthenticated(req, res) === false) {
-  //   res.end("Login required");
-  //   res.redirect(302, "/login");
-  //   return false;
-  // }
+  if (!auth.isOwner(req, res)) {
+    res.redirect("/");
+    return false;
+  }
   let list = template.list(req.list);
   let filteredId = path.parse(req.params.pageId).base;
 
@@ -94,10 +93,10 @@ router.post("/update_process", (req, res) => {
 });
 
 router.post("/delete_process", (req, res) => {
-  // if (authFunc.IsAuthenticated(req, res) === false) {
-  //   res.end("Login required");
-  //   return false;
-  // }
+  if (!auth.isOwner(req, res)) {
+    res.redirect("/");
+    return false;
+  }
   let post = req.body;
   let id = post.id;
   let filteredId = path.parse(id).base;

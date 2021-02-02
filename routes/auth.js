@@ -33,8 +33,9 @@ router.post("/login_process", (req, res) => {
   if (email === authData.email && password === authData.password) {
     req.session.is_loggedIn = true;
     req.session.nickname = authData.nickname;
-    // res.redirect("/");
-    res.send("work");
+    req.session.save(() => {
+      res.redirect("/");
+    });
   } else {
     res.send("Login denied");
   }
