@@ -11,6 +11,12 @@ const FileStore = require("session-file-store")(session);
 const app = express();
 const port = 3000;
 
+const authData = {
+  email: "wonho1401@gmail.com",
+  password: "111111",
+  nickname: "w0no",
+};
+
 app.use(express.static("public")); // 정적인 파일을 사용하는 방법.
 //form 데이터 처리
 //app.use를 통해 middleware가 장착되는 느낌.
@@ -23,6 +29,46 @@ app.use(
     resave: false,
     saveUninitialized: true, //true로 놔야 세션이 있을때만 실행이 된다. false로 두게되면 서버에 큰 부담을 줄 수 있음.
     store: new FileStore({ logFn: function () {} }),
+  })
+);
+
+//express-session이 내부적으로 사용되기 때문에 passport는 session 다음에 나와야함.
+const passport = require("passport"),
+  LocalStrategy = require("passport-local").Strategy;
+
+// app.use(passport.initialize());
+// app.use(passport.session());
+//여기부터 해야함.
+
+passport.use(
+  new LocalStrategy(
+    {
+      usernameField: "email",
+    },
+    function (username, password, done) {
+      console.log("Local Strategy", username, password);
+      if (username === authData.email) {
+        console.log("1");
+        if (password === authData.password) {
+          console.log("2");
+          return done(null, authData);
+        } else {
+          console.log("3");
+          return done(null, false, { message: "Incorrect password" });
+        }
+      } else {
+        console.log("4");
+        return done(null, false, { message: "Incorrect username" });
+      }
+    }
+  )
+);
+
+app.post(
+  "/auth/login_process",
+  passport.authenticate("local", {
+    successRedirect: "/",
+    failureRedirect: "/auth/login",
   })
 );
 

@@ -2,12 +2,6 @@ const express = require("express");
 const router = express.Router();
 const template = require("../lib/template");
 
-const authData = {
-  email: "wonho1401@gmail.com",
-  password: "111111",
-  nickname: "w0no",
-};
-
 router.get("/login", (req, res) => {
   let title = "WEB - login";
 
@@ -25,21 +19,21 @@ router.get("/login", (req, res) => {
   res.send(html);
 });
 
-router.post("/login_process", (req, res) => {
-  let post = req.body;
-  let email = post.email;
-  let password = post.password;
+// router.post("/login_process", (req, res) => {
+//   let post = req.body;
+//   let email = post.email;
+//   let password = post.password;
 
-  if (email === authData.email && password === authData.password) {
-    req.session.is_loggedIn = true;
-    req.session.nickname = authData.nickname;
-    req.session.save(() => {
-      res.redirect("/");
-    });
-  } else {
-    res.send("Login denied");
-  }
-});
+//   if (email === authData.email && password === authData.password) {
+//     req.session.is_loggedIn = true;
+//     req.session.nickname = authData.nickname;
+//     req.session.save(() => {
+//       res.redirect("/");
+//     });
+//   } else {
+//     res.send("Login denied");
+//   }
+// });
 
 router.get("/logout", (req, res) => {
   req.session.destroy((err) => {
