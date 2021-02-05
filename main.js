@@ -4,7 +4,8 @@ const bodyParser = require("body-parser");
 const compression = require("compression");
 const helmet = require("helmet");
 const session = require("express-session");
-const FileStore = require("session-file-store")(session);
+// const FileStore = require("session-file-store")(session);
+const LokiStore = require("connect-loki")(session);
 const flash = require("connect-flash");
 const app = express();
 const port = 3000;
@@ -15,14 +16,24 @@ app.use(express.static("public")); // 정적인 파일을 사용하는 방법.
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(compression());
 app.use(helmet());
+// app.use(
+//   session({
+//     secret: "Keyboard Cat", //필수적으로 들어가야하는 값. 나중에는 꼭 변수처리하고 공유되지 않게 해야함.
+//     resave: false,
+//     saveUninitialized: true, //true로 놔야 세션이 있을때만 실행이 된다. false로 두게되면 서버에 큰 부담을 줄 수 있음.
+//     store: new FileStore({ logFn: function () {} }),
+//   })
+// );
+
 app.use(
   session({
+    store: new LokiStore(),
     secret: "Keyboard Cat", //필수적으로 들어가야하는 값. 나중에는 꼭 변수처리하고 공유되지 않게 해야함.
     resave: false,
     saveUninitialized: true, //true로 놔야 세션이 있을때만 실행이 된다. false로 두게되면 서버에 큰 부담을 줄 수 있음.
-    store: new FileStore({ logFn: function () {} }),
   })
 );
+
 app.use(flash());
 
 const passport = require("./lib/passport")(app);
