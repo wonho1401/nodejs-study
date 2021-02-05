@@ -2,45 +2,44 @@ const express = require("express");
 const router = express.Router();
 const template = require("../lib/template");
 
-router.get("/login", (req, res) => {
-  let title = "WEB - login";
-
-  let html = template.html(
-    title,
-    `
+module.exports = function (passport) {
+  router.get("/login", (req, res) => {
+    let fmsg = req.flash();
+    console.log(fmsg);
+    let feedback = "";
+    if (fmsg.error) {
+      feedback = fmsg.error[0];
+    }
+    let title = "WEB - login";
+    let html = template.html(
+      title,
+      `   <div>${feedback} </div>
         <form action="/auth/login_process" method="post" >
           <p><input type="text" name="email" placeholder="Email"></p>
           <p><input type="password" name="password" placeholder="Password"></p>
           <p><input type="submit" value="login"></p>
           </form>
     `,
-    ""
-  );
-  res.send(html);
-});
-
-// router.post("/login_process", (req, res) => {
-//   let post = req.body;
-//   let email = post.email;
-//   let password = post.password;
-
-//   if (email === authData.email && password === authData.password) {
-//     req.session.is_loggedIn = true;
-//     req.session.nickname = authData.nickname;
-//     req.session.save(() => {
-//       res.redirect("/");
-//     });
-//   } else {
-//     res.send("Login denied");
-//   }
-// });
-
-router.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    res.redirect("/");
+      ""
+    );
+    res.send(html);
   });
-});
 
-module.exports = router;
-// module.exports.IsAuthenticated = IsAuthenticated;
-// module.exports.authStatusUI = authStatusUI;
+  router.post(
+    "/login_process",
+    passport.authenticate("local", {
+      successRedirect: "/",
+      failureRedirect: "/auth/login",
+      failureFlash: true,
+      successFlash: true,
+    })
+  );
+
+  router.get("/logout", (req, res) => {
+    req.logout();
+    req.session.save(function () {
+      res.redirect("/");
+    });
+  });
+  return router;
+};

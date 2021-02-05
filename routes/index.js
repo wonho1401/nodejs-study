@@ -5,6 +5,11 @@ const auth = require("../lib/auth");
 
 // path에 들어가면 callback 함수 실행.
 router.get("/", (req, res) => {
+  let fmsg = req.flash();
+  let feedback = "";
+  if (fmsg.success) {
+    feedback = fmsg.success[0];
+  }
   let title = "Welcome";
   let data = "Hello. Nodejs";
 
